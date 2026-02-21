@@ -3,429 +3,693 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Open Synapse Labs — Arche3 Architecture</title>
+<title>Open Synapse Labs — Building Better Futures</title>
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;600;700&family=JetBrains+Mono:wght@300;400;700&family=Bebas+Neue&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
 
 <style>
-    :root {
-        --primary: #00f5ff;
-        --secondary: #7f5cff;
-        --accent: #ff0055;
-        --dark-bg: #030408;
-        --panel-bg: rgba(13, 17, 23, 0.8);
-        --border: rgba(255,255,255,0.08);
-        --text-gray: #8b949e;
-    }
+:root {
+    --bg:        #0A0E1A;
+    --neural:    #1B3A6B;
+    --cyan:      #00C2FF;
+    --ice:       #E8F4FD;
+    --glow:      #0066CC;
+    --panel:     rgba(27, 58, 107, 0.18);
+    --border:    rgba(0, 194, 255, 0.15);
+    --border2:   rgba(0, 194, 255, 0.35);
+    --text-muted:#7A9BBF;
+    --green:     #00E5A0;
+    --amber:     #FFB900;
+}
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body { font-family:'Rajdhani',sans-serif; background:var(--bg); color:var(--ice); overflow-x:hidden; line-height:1.5; cursor:none; }
 
-    * { margin:0; padding:0; box-sizing:border-box; scroll-behavior: smooth; }
+/* CURSOR */
+.cursor-dot { width:6px; height:6px; background:var(--cyan); border-radius:50%; position:fixed; transform:translate(-50%,-50%); pointer-events:none; z-index:9999; }
+.cursor-ring { width:30px; height:30px; border:1px solid rgba(0,194,255,0.5); clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%); position:fixed; transform:translate(-50%,-50%); pointer-events:none; z-index:9998; animation:rotateCursor 8s linear infinite; }
+@keyframes rotateCursor { to { transform:translate(-50%,-50%) rotate(360deg); } }
 
-    body {
-        font-family: 'Inter', sans-serif;
-        background: var(--dark-bg);
-        color: #fff;
-        overflow-x: hidden;
-        line-height: 1.5;
-    }
+/* CANVAS */
+canvas#bg { position:fixed; top:0; left:0; z-index:0; opacity:.4; pointer-events:none; }
 
-    canvas#network {
-        position: fixed;
-        top:0;
-        left:0;
-        z-index:-1;
-        opacity: 0.3;
-    }
+/* LAYOUT */
+.container { max-width:1180px; margin:0 auto; padding:0 5%; position:relative; z-index:2; }
+.mono { font-family:'JetBrains Mono',monospace; }
 
-    .container { max-width: 1200px; margin: 0 auto; padding: 0 5%; }
-    .mono { font-family: 'JetBrains Mono', monospace; }
-    .text-primary { color: var(--primary); }
-    .text-gradient {
-        background: linear-gradient(90deg, var(--primary), var(--secondary));
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
+/* NAV */
+nav { position:fixed; width:100%; z-index:100; padding:20px 0; background:rgba(10,14,26,0.92); backdrop-filter:blur(20px); border-bottom:1px solid var(--border); }
+.nav-inner { display:flex; justify-content:space-between; align-items:center; }
+.logo { font-family:'Bebas Neue',sans-serif; font-size:1.5rem; letter-spacing:4px; color:var(--ice); }
+.logo span { color:var(--cyan); }
+nav ul { display:flex; list-style:none; gap:36px; }
+nav a { color:var(--text-muted); text-decoration:none; font-size:0.78rem; font-weight:600; letter-spacing:2px; text-transform:uppercase; transition:color .3s; font-family:'JetBrains Mono',monospace; }
+nav a:hover { color:var(--cyan); }
 
-    /* Navigation */
-    nav {
-        position: fixed;
-        width: 100%;
-        padding: 25px 0;
-        background: rgba(3, 4, 8, 0.9);
-        backdrop-filter: blur(15px);
-        border-bottom: 1px solid var(--border);
-        z-index: 100;
-    }
-    nav .nav-inner { display: flex; justify-content: space-between; align-items: center; }
-    nav .logo { font-size: 1.3rem; font-weight: 800; letter-spacing: 2px; }
-    nav ul { display: flex; list-style: none; gap: 35px; }
-    nav a { color: var(--text-gray); text-decoration: none; font-size: 0.85rem; font-weight: 600; transition: 0.3s; }
-    nav a:hover { color: var(--primary); }
+/* HUD CORNERS */
+.hud-corner { position:fixed; width:40px; height:40px; z-index:9990; pointer-events:none; }
+.hud-corner.tl { top:80px; left:20px; border-top:1px solid rgba(0,194,255,0.3); border-left:1px solid rgba(0,194,255,0.3); }
+.hud-corner.tr { top:80px; right:20px; border-top:1px solid rgba(0,194,255,0.3); border-right:1px solid rgba(0,194,255,0.3); }
+.hud-corner.bl { bottom:20px; left:20px; border-bottom:1px solid rgba(0,194,255,0.3); border-left:1px solid rgba(0,194,255,0.3); }
+.hud-corner.br { bottom:20px; right:20px; border-bottom:1px solid rgba(0,194,255,0.3); border-right:1px solid rgba(0,194,255,0.3); }
 
-    /* Hero Section */
-    .hero {
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        padding-top: 100px;
-    }
-    .hero-grid {
-        display: grid;
-        grid-template-columns: 1.1fr 0.9fr;
-        gap: 60px;
-        align-items: center;
-    }
-    .hero h1 { font-size: clamp(2.5rem, 5vw, 4.5rem); line-height: 1.05; margin-bottom: 25px; }
-    .hero p { color: var(--text-gray); font-size: 1.2rem; margin-bottom: 40px; max-width: 550px; }
+/* SCANLINES */
+body::after { content:''; position:fixed; top:0; left:0; width:100%; height:100%; background:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0px,rgba(0,0,0,0) 2px,rgba(0,0,0,0.025) 2px,rgba(0,0,0,0.025) 4px); pointer-events:none; z-index:9997; }
 
-    .terminal-window {
-        background: #0d1117;
-        border: 1px solid #30363d;
-        border-radius: 12px;
-        padding: 25px;
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.8rem;
-        box-shadow: 0 30px 60px rgba(0,0,0,0.6);
-    }
-    .terminal-header { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid #30363d; padding-bottom: 10px; }
-    .dot { width: 10px; height: 10px; border-radius: 50%; }
-    .dot.red { background: #ff5f56; } .dot.yellow { background: #ffbd2e; } .dot.green { background: #27c93f; }
+/* HERO */
+.hero { min-height:100vh; display:flex; align-items:center; padding-top:100px; position:relative; overflow:hidden; }
+.hero::before { content:''; position:absolute; top:0; right:0; width:0; height:0; border-top:300px solid rgba(0,194,255,0.04); border-left:500px solid transparent; pointer-events:none; }
+.hero::after { content:''; position:absolute; bottom:0; left:0; width:0; height:0; border-bottom:200px solid rgba(0,102,204,0.06); border-right:400px solid transparent; pointer-events:none; }
+.hero-grid { display:grid; grid-template-columns:1.1fr 0.9fr; gap:70px; align-items:center; }
 
-    /* Features / Specs */
-    section { padding: 120px 0; }
-    .section-head { margin-bottom: 70px; }
-    .section-head h2 { font-size: 2.8rem; margin-bottom: 15px; }
+.status-tag { display:inline-flex; align-items:center; gap:10px; font-family:'JetBrains Mono',monospace; font-size:0.72rem; color:var(--cyan); letter-spacing:2px; margin-bottom:20px; padding:8px 16px; border:1px solid var(--border2); background:rgba(0,194,255,0.05); clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px)); }
+.status-dot { width:6px; height:6px; background:var(--cyan); border-radius:50%; animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;box-shadow:0 0 6px var(--cyan);}50%{opacity:.4;box-shadow:none;} }
 
-    .specs-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 25px;
-    }
-    .spec-card {
-        background: var(--panel-bg);
-        border: 1px solid var(--border);
-        padding: 40px;
-        border-radius: 16px;
-        transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-    .spec-card:hover { border-color: var(--primary); transform: translateY(-10px); background: rgba(13, 17, 23, 1); }
-    .spec-card i { font-size: 2rem; color: var(--primary); margin-bottom: 25px; }
-    .spec-card h3 { margin-bottom: 15px; font-size: 1.4rem; }
-    .spec-card p { color: var(--text-gray); font-size: 0.95rem; line-height: 1.6; }
+.hero h1 { font-family:'Bebas Neue',sans-serif; font-size:clamp(3rem,6vw,6rem); line-height:0.95; letter-spacing:2px; margin-bottom:15px; }
+.hero h1 .line2 { color:var(--cyan); text-shadow:0 0 40px rgba(0,194,255,0.4); }
 
-    /* Roadmap */
-    .roadmap-container {
-        position: relative;
-        padding-left: 40px;
-    }
-    .roadmap-container::before {
-        content: '';
-        position: absolute;
-        left: 0; top: 0; bottom: 0;
-        width: 1px; background: linear-gradient(to bottom, var(--primary), var(--secondary), transparent);
-    }
-    .roadmap-block {
-        margin-bottom: 60px;
-        position: relative;
-    }
-    .roadmap-block::after {
-        content: '';
-        position: absolute;
-        left: -45px; top: 10px;
-        width: 10px; height: 10px;
-        background: var(--primary);
-        border-radius: 50%;
-        box-shadow: 0 0 15px var(--primary);
-    }
-    .roadmap-year { font-size: 2rem; font-weight: 800; color: var(--primary); margin-bottom: 20px; }
-    .roadmap-models { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-    .model-tag {
-        background: rgba(255,255,255,0.05);
-        padding: 20px;
-        border-radius: 8px;
-        border-left: 3px solid var(--secondary);
-    }
-    .model-tag h4 { font-size: 1.1rem; margin-bottom: 5px; }
-    .model-tag span { font-family: 'JetBrains Mono'; font-size: 0.8rem; opacity: 0.6; }
+.hero-slogan { font-family:'JetBrains Mono',monospace; font-size:0.85rem; color:var(--text-muted); border-left:2px solid var(--cyan); padding-left:16px; margin-bottom:22px; letter-spacing:0.5px; line-height:1.7; }
+.hero-slogan em { color:var(--ice); font-style:normal; }
 
-    /* Team / Founder */
-    .founder-card {
-        display: grid;
-        grid-template-columns: 300px 1fr;
-        gap: 50px;
-        align-items: center;
-        background: linear-gradient(135deg, rgba(0,245,255,0.05) 0%, rgba(127,92,255,0.05) 100%);
-        padding: 50px;
-        border-radius: 24px;
-        border: 1px solid var(--border);
-    }
-    .founder-img {
-        width: 100%; aspect-ratio: 1;
-        background: #161b22;
-        border-radius: 20px;
-        display: flex; align-items: center; justify-content: center;
-        border: 2px solid var(--border);
-    }
-    .founder-info h3 { font-size: 2.5rem; margin-bottom: 10px; }
-    .founder-title { color: var(--primary); font-family: 'JetBrains Mono'; margin-bottom: 20px; display: block; }
+.hero-mission { background:rgba(0,229,160,0.04); border:1px solid rgba(0,229,160,0.12); border-left:3px solid var(--green); padding:16px 20px; margin-bottom:28px; clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px)); }
+.hero-mission .mission-label { font-family:'JetBrains Mono',monospace; font-size:0.65rem; letter-spacing:3px; color:var(--green); margin-bottom:6px; display:block; }
+.hero-mission p { color:var(--text-muted); font-size:0.93rem; line-height:1.65; }
+.hero-mission p strong { color:var(--ice); }
 
-    /* CTA / Footer */
-    .cta-box {
-        text-align: center;
-        background: var(--panel-bg);
-        padding: 80px 40px;
-        border-radius: 30px;
-        border: 1px solid var(--primary);
-    }
-    .btn {
-        padding: 18px 45px;
-        background: var(--primary);
-        color: #000;
-        text-decoration: none;
-        font-weight: 800;
-        border-radius: 50px;
-        display: inline-block;
-        transition: 0.3s;
-    }
-    .btn:hover { transform: scale(1.05); box-shadow: 0 0 30px var(--primary); }
+.hero-desc { color:var(--text-muted); font-size:1rem; font-weight:400; margin-bottom:36px; max-width:520px; line-height:1.65; }
+.hero-desc strong { color:var(--ice); }
 
-    footer { padding: 60px 0; border-top: 1px solid var(--border); color: #444; text-align: center; font-size: 0.9rem; }
+.btn-group { display:flex; gap:20px; align-items:center; }
+.btn-primary { padding:14px 36px; background:var(--cyan); color:#000; text-decoration:none; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:0.78rem; letter-spacing:2px; text-transform:uppercase; clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px)); transition:all .3s; }
+.btn-primary:hover { background:#fff; box-shadow:0 0 30px rgba(0,194,255,0.6); transform:translateY(-2px); }
+.btn-secondary { font-family:'JetBrains Mono',monospace; font-size:0.75rem; letter-spacing:1.5px; color:var(--text-muted); text-transform:uppercase; display:flex; align-items:center; gap:8px; text-decoration:none; transition:color .3s; }
+.btn-secondary:hover { color:var(--cyan); }
+.btn-secondary::before { content:'►'; font-size:0.6rem; }
 
-    @media (max-width: 768px) {
-        .hero-grid, .founder-card, .roadmap-models { grid-template-columns: 1fr; }
-        .hero h1 { font-size: 2.5rem; }
-    }
+/* TERMINAL */
+.terminal-window { background:rgba(10,14,26,0.95); border:1px solid var(--border2); clip-path:polygon(0 0,calc(100% - 20px) 0,100% 20px,100% 100%,20px 100%,0 calc(100% - 20px)); padding:28px; font-family:'JetBrains Mono',monospace; font-size:0.75rem; position:relative; box-shadow:0 0 60px rgba(0,102,204,0.2),inset 0 0 40px rgba(0,194,255,0.02); }
+.terminal-window::before { content:''; position:absolute; top:0; right:0; width:0; height:0; border-top:20px solid var(--cyan); border-left:20px solid transparent; opacity:.7; }
+.terminal-window::after { content:''; position:absolute; bottom:0; left:0; width:0; height:0; border-bottom:20px solid var(--glow); border-right:20px solid transparent; opacity:.5; }
+.terminal-header { display:flex; align-items:center; gap:8px; margin-bottom:20px; padding-bottom:14px; border-bottom:1px solid rgba(0,194,255,0.1); }
+.t-label { font-size:0.7rem; opacity:.4; margin-left:8px; }
+.tri-dot { width:8px; height:8px; clip-path:polygon(50% 0%,100% 100%,0% 100%); }
+.tri-dot.r { background:#FF4B6E; } .tri-dot.y { background:#FFB900; } .tri-dot.g { background:#00C2FF; }
+
+/* DIVIDER */
+.section-divider { width:100%; height:1px; background:linear-gradient(90deg,transparent,var(--cyan),transparent); opacity:.2; }
+
+/* SECTION HEAD */
+section { padding:110px 0; position:relative; z-index:2; }
+.section-head { margin-bottom:55px; }
+.section-label { font-family:'JetBrains Mono',monospace; font-size:0.72rem; letter-spacing:3px; text-transform:uppercase; color:var(--cyan); margin-bottom:12px; display:flex; align-items:center; gap:12px; }
+.section-label::before { content:''; display:inline-block; width:0; height:0; border-left:8px solid var(--cyan); border-top:5px solid transparent; border-bottom:5px solid transparent; }
+.section-head h2 { font-family:'Bebas Neue',sans-serif; font-size:clamp(2.2rem,4vw,3.5rem); letter-spacing:2px; }
+
+/* PRODUCTS */
+.products-intro { font-size:1.05rem; color:var(--text-muted); max-width:720px; margin-bottom:50px; line-height:1.7; }
+.products-intro strong { color:var(--ice); }
+
+.cat-tabs { display:flex; gap:4px; margin-bottom:36px; flex-wrap:wrap; }
+.cat-tab { font-family:'JetBrains Mono',monospace; font-size:0.72rem; letter-spacing:2px; text-transform:uppercase; padding:10px 22px; border:1px solid var(--border); background:transparent; color:var(--text-muted); cursor:none; transition:all .3s; clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px)); }
+.cat-tab.active, .cat-tab:hover { border-color:var(--cyan); color:var(--cyan); background:rgba(0,194,255,0.06); }
+
+.products-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px; }
+
+.prod-card { background:var(--panel); border:1px solid var(--border); padding:36px 32px; position:relative; overflow:hidden; transition:background .3s,border-color .3s,transform .3s; display:none; }
+.prod-card.show { display:block; }
+.prod-card:hover { background:rgba(27,58,107,0.4); border-color:var(--cyan); transform:translateY(-4px); }
+.prod-card::before { content:''; position:absolute; top:0; left:0; width:0; height:0; border-top:32px solid rgba(0,194,255,0.08); border-right:32px solid transparent; transition:border-width .3s; }
+.prod-card:hover::before { border-top-width:56px; border-right-width:56px; }
+.prod-card::after { content:''; position:absolute; top:0; right:0; width:0; height:0; border-top:14px solid var(--border2); border-left:14px solid transparent; }
+
+.prod-cat-badge { font-family:'JetBrains Mono',monospace; font-size:0.62rem; letter-spacing:2px; text-transform:uppercase; padding:4px 10px; margin-bottom:16px; display:inline-block; clip-path:polygon(0 0,calc(100% - 6px) 0,100% 6px,100% 100%,6px 100%,0 calc(100% - 6px)); }
+.badge-ai { background:rgba(0,194,255,0.1); color:var(--cyan); border:1px solid rgba(0,194,255,0.3); }
+.badge-robot { background:rgba(0,229,160,0.08); color:var(--green); border:1px solid rgba(0,229,160,0.3); }
+.badge-chip { background:rgba(255,185,0,0.08); color:var(--amber); border:1px solid rgba(255,185,0,0.3); }
+
+.prod-icon { font-size:1.8rem; margin-bottom:16px; }
+.prod-card h3 { font-size:1.35rem; font-weight:700; margin-bottom:10px; letter-spacing:.5px; }
+.prod-card .prod-desc { color:var(--text-muted); font-size:0.92rem; line-height:1.65; margin-bottom:18px; }
+.prod-card .prod-params { font-family:'JetBrains Mono',monospace; font-size:0.69rem; color:rgba(0,194,255,0.5); letter-spacing:1px; margin-bottom:20px; border-top:1px solid var(--border); padding-top:14px; line-height:1.8; }
+
+.prod-footer { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+.prod-status { display:inline-flex; align-items:center; gap:8px; font-family:'JetBrains Mono',monospace; font-size:0.68rem; letter-spacing:1.5px; text-transform:uppercase; }
+.prod-status.soon { color:var(--amber); }
+.prod-status.soon::before { content:''; width:6px; height:6px; background:var(--amber); border-radius:50%; display:inline-block; animation:pulse 2s infinite; }
+.prod-status.wip { color:var(--text-muted); }
+
+.prod-link { display:inline-flex; align-items:center; gap:7px; font-family:'JetBrains Mono',monospace; font-size:0.68rem; letter-spacing:1.5px; color:var(--text-muted); text-decoration:none; text-transform:uppercase; transition:color .3s; padding:7px 12px; border:1px solid var(--border); clip-path:polygon(0 0,calc(100% - 6px) 0,100% 6px,100% 100%,6px 100%,0 calc(100% - 6px)); }
+.prod-link:hover { color:var(--cyan); border-color:var(--cyan); }
+
+/* SPECS */
+.specs-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:2px; border:1px solid var(--border); overflow:hidden; clip-path:polygon(0 0,calc(100% - 20px) 0,100% 20px,100% 100%,20px 100%,0 calc(100% - 20px)); }
+.spec-card { background:var(--panel); padding:42px 36px; border-right:1px solid var(--border); border-bottom:1px solid var(--border); transition:background .4s; position:relative; overflow:hidden; }
+.spec-card::before { content:''; position:absolute; top:0; left:0; width:0; height:0; border-top:40px solid rgba(0,194,255,0.06); border-right:40px solid transparent; transition:border-width .4s; }
+.spec-card:hover::before { border-top-width:70px; border-right-width:70px; }
+.spec-card:hover { background:rgba(27,58,107,0.35); }
+.spec-icon { width:48px; height:48px; clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%); background:rgba(0,194,255,0.1); border:1px solid rgba(0,194,255,0.3); display:flex; align-items:center; justify-content:center; margin-bottom:28px; font-size:1.1rem; color:var(--cyan); }
+.spec-card h3 { font-size:1.3rem; font-weight:700; letter-spacing:1px; margin-bottom:14px; }
+.spec-card p { color:var(--text-muted); font-size:0.95rem; line-height:1.7; }
+.spec-card strong { color:var(--ice); }
+
+/* ROADMAP */
+.roadmap-track { position:relative; padding-left:50px; }
+.roadmap-track::before { content:''; position:absolute; left:0; top:0; bottom:0; width:1px; background:linear-gradient(to bottom,var(--cyan),var(--glow),transparent); }
+.roadmap-block { margin-bottom:64px; position:relative; opacity:0; transform:translateX(-20px); transition:opacity .6s ease,transform .6s ease; }
+.roadmap-block.visible { opacity:1; transform:translateX(0); }
+.roadmap-block::before { content:''; position:absolute; left:-55px; top:14px; width:0; height:0; border-left:10px solid var(--cyan); border-top:6px solid transparent; border-bottom:6px solid transparent; filter:drop-shadow(0 0 6px var(--cyan)); }
+.roadmap-year { font-family:'Bebas Neue',sans-serif; font-size:2.8rem; letter-spacing:3px; color:var(--cyan); margin-bottom:22px; line-height:1; }
+.roadmap-models { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.model-tag { background:var(--panel); border:1px solid var(--border); padding:22px 24px; clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px)); transition:border-color .3s,background .3s; position:relative; }
+.model-tag::after { content:''; position:absolute; top:0; right:0; width:0; height:0; border-top:12px solid var(--neural); border-left:12px solid transparent; }
+.model-tag:hover { border-color:var(--cyan); background:rgba(27,58,107,0.4); }
+.model-tag h4 { font-size:1.1rem; font-weight:700; letter-spacing:.5px; margin-bottom:6px; }
+.model-tag .params { font-family:'JetBrains Mono',monospace; font-size:0.72rem; color:var(--text-muted); letter-spacing:1px; }
+.model-tag.accent { border-color:rgba(0,194,255,0.4); }
+.model-tag.accent-2 { border-color:rgba(255,75,110,0.3); }
+.model-tag.accent-chip { border-color:rgba(255,185,0,0.35); }
+
+/* FOUNDER */
+.founder-card { display:grid; grid-template-columns:280px 1fr; gap:56px; align-items:center; background:var(--panel); border:1px solid var(--border); padding:50px; clip-path:polygon(0 0,calc(100% - 30px) 0,100% 30px,100% 100%,30px 100%,0 calc(100% - 30px)); position:relative; }
+.founder-card::before { content:''; position:absolute; top:0; right:0; width:0; height:0; border-top:30px solid rgba(0,194,255,0.5); border-left:30px solid transparent; }
+.founder-img { aspect-ratio:1; background:rgba(10,14,26,0.8); border:1px solid var(--border2); clip-path:polygon(0 0,calc(100% - 20px) 0,100% 20px,100% 100%,20px 100%,0 calc(100% - 20px)); display:flex; align-items:center; justify-content:center; }
+.founder-info h3 { font-family:'Bebas Neue',sans-serif; font-size:3rem; letter-spacing:3px; margin-bottom:6px; }
+.founder-title { font-family:'JetBrains Mono',monospace; font-size:0.72rem; color:var(--cyan); letter-spacing:2px; display:block; margin-bottom:20px; }
+.founder-info p { color:var(--text-muted); font-size:1rem; line-height:1.7; margin-bottom:24px; }
+.social-links { display:flex; gap:20px; }
+.social-links a { color:var(--text-muted); transition:color .3s; }
+.social-links a:hover { color:var(--cyan); }
+
+/* CONTACT */
+.contact-wrapper { display:grid; grid-template-columns:1fr 1fr; gap:70px; align-items:start; }
+.contact-info h2 { font-family:'Bebas Neue',sans-serif; font-size:clamp(2.2rem,4vw,3.8rem); letter-spacing:2px; margin-bottom:18px; line-height:1; }
+.contact-info h2 span { color:var(--cyan); }
+.contact-info p { color:var(--text-muted); font-size:1rem; line-height:1.7; margin-bottom:36px; }
+.contact-meta { display:flex; flex-direction:column; gap:16px; }
+.meta-item { display:flex; align-items:center; gap:14px; font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:var(--text-muted); letter-spacing:1px; }
+.meta-icon { width:32px; height:32px; clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%); background:rgba(0,194,255,0.1); border:1px solid var(--border2); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:0.75rem; color:var(--cyan); }
+
+/* FORM */
+.contact-form { background:var(--panel); border:1px solid var(--border); padding:42px; clip-path:polygon(0 0,calc(100% - 20px) 0,100% 20px,100% 100%,20px 100%,0 calc(100% - 20px)); position:relative; }
+.contact-form::before { content:''; position:absolute; top:0; right:0; width:0; height:0; border-top:20px solid rgba(0,194,255,0.4); border-left:20px solid transparent; }
+.form-group { margin-bottom:22px; }
+.form-group label { display:block; font-family:'JetBrains Mono',monospace; font-size:0.7rem; letter-spacing:2px; text-transform:uppercase; color:var(--cyan); margin-bottom:8px; }
+.form-group input, .form-group textarea { width:100%; background:rgba(10,14,26,0.8); border:1px solid var(--border); color:var(--ice); font-family:'Rajdhani',sans-serif; font-size:1rem; font-weight:500; padding:14px 18px; outline:none; transition:border-color .3s,box-shadow .3s; clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px)); resize:none; }
+.form-group input::placeholder, .form-group textarea::placeholder { color:rgba(122,155,191,0.4); }
+.form-group input:focus, .form-group textarea:focus { border-color:var(--cyan); box-shadow:0 0 20px rgba(0,194,255,0.1),inset 0 0 10px rgba(0,194,255,0.03); }
+.form-group textarea { height:130px; }
+.btn-submit { width:100%; padding:16px; background:transparent; border:1px solid var(--cyan); color:var(--cyan); font-family:'JetBrains Mono',monospace; font-size:0.8rem; letter-spacing:3px; text-transform:uppercase; cursor:none; clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px)); transition:all .3s; position:relative; overflow:hidden; z-index:0; }
+.btn-submit::before { content:''; position:absolute; top:0; left:-100%; width:100%; height:100%; background:var(--cyan); transition:left .4s ease; z-index:-1; }
+.btn-submit:hover { color:#000; }
+.btn-submit:hover::before { left:0; }
+.btn-submit:disabled { opacity:.5; }
+.form-note { font-family:'JetBrains Mono',monospace; font-size:0.62rem; color:var(--text-muted); margin-top:12px; letter-spacing:1px; opacity:.5; text-align:center; }
+.form-error { display:none; font-family:'JetBrains Mono',monospace; font-size:0.7rem; color:#FF4B6E; letter-spacing:1px; margin-top:10px; padding:10px 14px; border:1px solid rgba(255,75,110,0.3); background:rgba(255,75,110,0.05); }
+.form-success { display:none; text-align:center; padding:40px 20px; font-family:'JetBrains Mono',monospace; font-size:0.85rem; color:var(--cyan); letter-spacing:2px; }
+
+/* FOOTER */
+footer { padding:50px 0; border-top:1px solid var(--border); position:relative; z-index:2; }
+.foot-inner { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; }
+footer p { font-family:'JetBrains Mono',monospace; font-size:0.7rem; color:#2A4060; letter-spacing:2px; }
+
+/* FADE IN */
+.fade-in { opacity:0; transform:translateY(24px); transition:opacity .7s ease,transform .7s ease; }
+.fade-in.visible { opacity:1; transform:translateY(0); }
+
+@media(max-width:768px) {
+    .hero-grid,.contact-wrapper,.founder-card,.roadmap-models { grid-template-columns:1fr; }
+    .hero h1 { font-size:3rem; }
+    .specs-grid,.products-grid { grid-template-columns:1fr; }
+    nav ul { display:none; }
+    .founder-img { max-width:220px; margin:0 auto; }
+}
 </style>
 </head>
 <body>
 
-<canvas id="network"></canvas>
+<div class="hud-corner tl"></div>
+<div class="hud-corner tr"></div>
+<div class="hud-corner bl"></div>
+<div class="hud-corner br"></div>
+<div class="cursor-dot" id="cursorDot"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+<canvas id="bg"></canvas>
 
+<!-- NAV -->
 <nav>
     <div class="container nav-inner">
-        <div class="logo">OPEN <span class="text-primary">SYNAPSE</span> LABS</div>
+        <div class="logo">OPEN <span>SYNAPSE</span> LABS</div>
         <ul>
+            <li><a href="#products">Products</a></li>
             <li><a href="#specs">Architecture</a></li>
             <li><a href="#roadmap">Roadmap</a></li>
             <li><a href="#founder">Founder</a></li>
-            <li><a href="#contact" class="text-primary">Invest</a></li>
+            <li><a href="#contact">Invest</a></li>
         </ul>
     </div>
 </nav>
 
+<!-- HERO -->
 <section class="hero">
     <div class="container hero-grid">
-        <div data-aos="fade-up">
-            <div class="mono text-primary" style="margin-bottom:15px;">// STATUS: SCALING TO CUDA</div>
-            <h1>The New Standard for <span class="text-gradient">Efficient AGI</span>.</h1>
-            <p>Developing Arche3: A massively sparse Mixture of Experts (MoE) system designed to outperform brute-force scaling through structural intelligence.</p>
-            <div style="display:flex; gap:20px;">
-                <a href="#contact" class="btn">Get Pitch Deck</a>
-                <div class="mono" style="font-size:0.8rem; padding-top:10px;">
-                    <span style="color:#27c93f;">●</span> GPU Cluster Readiness: 100%<br>
-                    <span style="color:var(--primary);">●</span> Next Milestone: Arche3 Mini
-                </div>
+        <div>
+            <div class="status-tag">
+                <span class="status-dot"></span>
+                STATUS: SCALING TO CUDA — SEED ROUND OPEN
+            </div>
+            <h1>
+                Intelligence<br>
+                That Makes the<br>
+                <span class="line2">World Better.</span>
+            </h1>
+            <div class="hero-slogan">
+                <em>"Intelligence is not what you know —</em><br>
+                it's who you become."
+            </div>
+            <div class="hero-mission">
+                <span class="mission-label">▲ PRIMARY MISSION</span>
+                <p>We don't build AI to replace humanity. We build it to <strong>amplify human potential</strong> — through smarter models, adaptive robots, and silicon that thinks at the speed of light.</p>
+            </div>
+            <p class="hero-desc">Open Synapse Labs is developing three converging technologies: <strong>sparse AI models</strong>, <strong>EAP-driven robotics</strong>, and <strong>quantum photonic chips</strong> — engineered as one unified platform for a better world.</p>
+            <div class="btn-group">
+                <a href="#contact" class="btn-primary">Get Pitch Deck</a>
+                <a href="#products" class="btn-secondary">Explore Products</a>
             </div>
         </div>
 
-        <div class="terminal-window" data-aos="zoom-in">
+        <div class="terminal-window">
             <div class="terminal-header">
-                <div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div>
-                <span style="margin-left:10px; opacity:0.5; font-size:0.7rem;">arche3_config.py</span>
+                <div class="tri-dot r"></div>
+                <div class="tri-dot y"></div>
+                <div class="tri-dot g"></div>
+                <span class="t-label mono">arche3_config.py — v3</span>
             </div>
             <div id="typewriter" class="mono"></div>
         </div>
     </div>
 </section>
 
-<section id="specs">
+<div class="section-divider"></div>
+
+<!-- PRODUCTS -->
+<section id="products">
     <div class="container">
-        <div class="section-head" data-aos="fade-right">
-            <div class="mono text-primary">CORE ARCHITECTURE</div>
-            <h2>Technical Superiority</h2>
+        <div class="section-head fade-in">
+            <div class="section-label">Our Technologies</div>
+            <h2>Three Pillars, One Vision</h2>
+        </div>
+        <p class="products-intro fade-in">
+            Arche3 is our flagship AI system — but it's only the beginning. Open Synapse Labs is building a <strong>complete technological ecosystem</strong>: from sparse neural language models and EAP-driven biomimetic robots, to photonic quantum processors that compute at the speed of light.
+        </p>
+
+        <div class="cat-tabs fade-in">
+            <button class="cat-tab active" onclick="filterCat(this,'all')">All</button>
+            <button class="cat-tab" onclick="filterCat(this,'ai')">▸ AI Models</button>
+            <button class="cat-tab" onclick="filterCat(this,'robot')">▸ Robotics (EAP)</button>
+            <button class="cat-tab" onclick="filterCat(this,'chip')">▸ Quantum Photonic</button>
         </div>
 
+        <div class="products-grid">
+
+            <!-- AI -->
+            <div class="prod-card show" data-cat="ai">
+                <div class="prod-cat-badge badge-ai">AI Model</div>
+                <div class="prod-icon">🧠</div>
+                <h3>Arche3-7B Mini</h3>
+                <p class="prod-desc">Our first public model. Massively sparse MoE with 20,480 experts across 8 domains. Built for edge deployment — structurally intelligent, no brute-force scaling required.</p>
+                <div class="prod-params">
+                    d_model = 2048 | n_layers = 10 (5+5)<br>
+                    total_experts = 20,480 (8 × 2,560)<br>
+                    expert_rank = 160 | dynamic_k ∈ [2,4]<br>
+                    FP32 | ~7.03B params | hive.bin ~25 GB
+                </div>
+                <div class="prod-footer">
+                    <span class="prod-status soon">Coming Soon — 2026</span>
+                    <a href="#" class="prod-link">🤗 Hugging Face</a>
+                </div>
+            </div>
+
+            <div class="prod-card show" data-cat="ai">
+                <div class="prod-cat-badge badge-ai">AI Model</div>
+                <div class="prod-icon">⚡</div>
+                <h3>Arche3-35B Medium</h3>
+                <p class="prod-desc">Scaled Arche3 architecture with extended MoE hive and deeper Dense Core fusion. SOTA-competitive performance at a fraction of inference cost.</p>
+                <div class="prod-params">
+                    Architecture: Dense Core + Extended MoE Hive<br>
+                    Routing: Dynamic Top-K | LoRA-native adapters<br>
+                    Target: Professional-grade efficiency
+                </div>
+                <div class="prod-footer">
+                    <span class="prod-status wip">◌ In Development — 2026</span>
+                    <a href="#" class="prod-link">🤗 Hugging Face</a>
+                </div>
+            </div>
+
+            <div class="prod-card show" data-cat="ai">
+                <div class="prod-cat-badge badge-ai">AI Model</div>
+                <div class="prod-icon">🌐</div>
+                <h3>Arche3-86B Pro</h3>
+                <p class="prod-desc">Professional AGI system with full World Model integration and Ethical Core — complex multi-domain reasoning, designed for real-world beneficial deployment.</p>
+                <div class="prod-params">
+                    World Model: Visual (224px) + State (dim=512)<br>
+                    Ethical Core: human_protection = 1.0<br>
+                    safety_threshold = 0.7 | memory_size = 50,000
+                </div>
+                <div class="prod-footer">
+                    <span class="prod-status wip">◌ Planned — 2027</span>
+                    <a href="#" class="prod-link">🤗 Hugging Face</a>
+                </div>
+            </div>
+
+            <!-- ROBOTICS -->
+            <div class="prod-card show" data-cat="robot">
+                <div class="prod-cat-badge badge-robot">Robotics — EAP</div>
+                <div class="prod-icon">🦾</div>
+                <h3>Synapse EAP-1 Actuator</h3>
+                <p class="prod-desc">First-generation actuator system powered by Electroactive Polymers. EAP artificial muscles are silent, lightweight, and move with biological fluidity — no hydraulics, no metal gears.</p>
+                <div class="prod-params">
+                    Technology: Electroactive Polymer (EAP)<br>
+                    Mode: Ionic / Dielectric actuation<br>
+                    Design: Biomimetic — soft-body motion
+                </div>
+                <div class="prod-footer">
+                    <span class="prod-status wip">◌ Research Phase</span>
+                </div>
+            </div>
+
+            <div class="prod-card show" data-cat="robot">
+                <div class="prod-cat-badge badge-robot">Robotics — EAP</div>
+                <div class="prod-icon">🤖</div>
+                <h3>Synapse EAP-Body</h3>
+                <p class="prod-desc">Full humanoid robotic platform powered by EAP musculature and driven by the Arche3 neural core. Designed for assistance, care, and exploration — not to replace people, but to protect them.</p>
+                <div class="prod-params">
+                    Actuation: Full EAP musculature system<br>
+                    Control: Arche3 World Model backbone<br>
+                    Primary goal: Human protection & assistance
+                </div>
+                <div class="prod-footer">
+                    <span class="prod-status wip">◌ Concept — 2027+</span>
+                </div>
+            </div>
+
+            <!-- QUANTUM CHIP -->
+            <div class="prod-card show" data-cat="chip">
+                <div class="prod-cat-badge badge-chip">Quantum Photonic</div>
+                <div class="prod-icon">⬡</div>
+                <h3>Open Synapse QPU-1</h3>
+                <p class="prod-desc">Our proprietary <strong style="color:var(--amber)">Quantum Photonic Chip</strong> — not a classical accelerator. Light-encoded computation enables near-zero-latency matrix operations, purpose-built for MoE inference at physical limits.</p>
+                <div class="prod-params">
+                    Technology: Quantum Photonic Processing Unit<br>
+                    Medium: Photon-encoded matrix multiplication<br>
+                    Target: Arche3 MoE hive inference<br>
+                    Advantage: Light-speed compute | Ultra-low power
+                </div>
+                <div class="prod-footer">
+                    <span class="prod-status wip">◌ Long-horizon R&D — 2028+</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ARCHITECTURE -->
+<section id="specs">
+    <div class="container">
+        <div class="section-head fade-in">
+            <div class="section-label">Core Architecture</div>
+            <h2>Arche3 Technical Design</h2>
+        </div>
         <div class="specs-grid">
-            <div class="spec-card" data-aos="fade-up">
-                <i class="fa-solid fa-microchip"></i>
-                <h3>Vertical Compute</h3>
-                <p>Starting with local <b>MPS</b> optimization for development, moving to <b>NVIDIA H100</b> clusters for pre-training, and finalizing with <b>Custom Arche Chips</b> for ultimate efficiency.</p>
+            <div class="spec-card fade-in">
+                <div class="spec-icon"><i class="fa-solid fa-microchip"></i></div>
+                <h3>Two-Stage Dense Core</h3>
+                <p><strong>5-layer Input encoder</strong> + <strong>5-layer Fusion decoder</strong>. d_model=2048, GQA with 16 heads / 4 KV-heads. d_ff_dense=1536. Handles tokenization and expert output synthesis — ~100M params each.</p>
             </div>
-            <div class="spec-card" data-aos="fade-up" data-aos-delay="100">
-                <i class="fa-solid fa-diagram-project"></i>
-                <h3>Massive Sparsity</h3>
-                <p>Arche3 utilizes a <b>8,192 expert</b> hive with <b>Dynamic Top-K</b> routing. High intelligence with only a fraction of active parameters per token.</p>
+            <div class="spec-card fade-in">
+                <div class="spec-icon"><i class="fa-solid fa-diagram-project"></i></div>
+                <h3>MoE Hive — 20,480 Experts</h3>
+                <p><strong>8 domains × 2,560 experts</strong>. Expert rank=160, expert_d_ff=3584. Shared domain bases. Dynamic Top-K routing k∈[2,4] with threshold=0.6 — only the most relevant experts activate per token. ~6.76B params.</p>
             </div>
-            <div class="spec-card" data-aos="fade-up" data-aos-delay="200">
-                <i class="fa-solid fa-bolt"></i>
-                <h3>LoRA-Native</h3>
-                <p>Frozen dense core architecture with rank-schedule adapters. Allows rapid domain adaptation without catastrophic forgetting.</p>
+            <div class="spec-card fade-in">
+                <div class="spec-icon"><i class="fa-solid fa-shield-halved"></i></div>
+                <h3>Ethical Core + World Model</h3>
+                <p>Built-in <strong>Ethical Core</strong> with configurable objectives: human_protection=1.0, survival=1.0. <strong>World Model</strong> for visual state reasoning (224px input, state_dim=512). Persistent memory: 50,000 slots × d_model.</p>
             </div>
         </div>
     </div>
 </section>
 
+<div class="section-divider"></div>
+
+<!-- ROADMAP -->
 <section id="roadmap">
     <div class="container">
-        <div class="section-head">
-            <div class="mono text-primary">STRATEGY</div>
+        <div class="section-head fade-in">
+            <div class="section-label">Strategy</div>
             <h2>Release Roadmap</h2>
         </div>
-
-        <div class="roadmap-container">
-            <div class="roadmap-block" data-aos="fade-left">
+        <div class="roadmap-track">
+            <div class="roadmap-block">
                 <div class="roadmap-year">2026</div>
                 <div class="roadmap-models">
                     <div class="model-tag">
-                        <h4>Arche3 Mini</h4>
-                        <span>7B Parameters | Edge Optimized</span>
+                        <h4>Arche3-7B Mini</h4>
+                        <div class="params">~7.03B Params | 20,480 Experts | Edge Optimized</div>
                     </div>
                     <div class="model-tag">
-                        <h4>Arche3 Medium</h4>
-                        <span>35B Parameters | SOTA Efficient</span>
+                        <h4>Arche3-35B Medium</h4>
+                        <div class="params">35B Parameters | SOTA Efficient</div>
                     </div>
                 </div>
             </div>
-
-            <div class="roadmap-block" data-aos="fade-left" data-aos-delay="100">
+            <div class="roadmap-block">
                 <div class="roadmap-year">2027</div>
                 <div class="roadmap-models">
-                    <div class="model-tag" style="border-left-color: var(--primary);">
-                        <h4>Arche3 Pro</h4>
-                        <span>86B Parameters | Professional AGI</span>
+                    <div class="model-tag accent">
+                        <h4>Arche3-86B Pro</h4>
+                        <div class="params">86B | World Model + Ethical Core</div>
                     </div>
-                    <div class="model-tag" style="border-left-color: var(--accent);">
-                        <h4>Arche3 Enterprise</h4>
-                        <span>200B Parameters | Corporate Sovereignty</span>
+                    <div class="model-tag" style="border-color:rgba(0,229,160,0.35);">
+                        <h4>Synapse EAP-Body</h4>
+                        <div class="params">Humanoid EAP Robot | Arche3 backbone</div>
                     </div>
                 </div>
             </div>
-
-            <div class="roadmap-block" data-aos="fade-left" data-aos-delay="200">
+            <div class="roadmap-block">
                 <div class="roadmap-year">2028+</div>
-                <div class="model-tag" style="width:100%; background:rgba(0,245,255,0.05);">
-                    <h4>Open Synapse Silicon</h4>
-                    <span>Custom AI Accelerators designed specifically for MoE inference architectures.</span>
+                <div class="roadmap-models">
+                    <div class="model-tag accent-2">
+                        <h4>Arche3-200B Enterprise</h4>
+                        <div class="params">200B Parameters | Corporate Deployment</div>
+                    </div>
+                    <div class="model-tag accent-chip">
+                        <h4>Open Synapse QPU-1</h4>
+                        <div class="params">Quantum Photonic Chip | Light-speed MoE inference</div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </section>
 
+<div class="section-divider"></div>
+
+<!-- FOUNDER -->
 <section id="founder">
     <div class="container">
-        <div class="founder-card" data-aos="flip-up">
+        <div class="section-head fade-in">
+            <div class="section-label">Leadership</div>
+            <h2>The Architect</h2>
+        </div>
+        <div class="founder-card fade-in">
             <div class="founder-img">
-                <i class="fa-solid fa-user-tie" style="font-size:5rem; color:rgba(255,255,255,0.2);"></i>
+                <i class="fa-solid fa-user-tie" style="font-size:4.5rem; color:rgba(0,194,255,0.15);"></i>
             </div>
             <div class="founder-info">
                 <span class="founder-title">FOUNDER & CHIEF ARCHITECT</span>
                 <h3>Gregor Gramtoshi</h3>
-                <p style="color:var(--text-gray); font-size:1.1rem; margin-bottom:20px;">
-                    Visionary behind the Open Synapse protocol. Gregor is engineering the transition from heavy brute-force LLMs to agile, sparse-matrix intelligent systems.
-                </p>
-                <div style="display:flex; gap:20px;">
-                    <a href="#" style="color:#fff;"><i class="fa-brands fa-linkedin-in fa-xl"></i></a>
-                    <a href="#" style="color:#fff;"><i class="fa-brands fa-github fa-xl"></i></a>
+                <p>Visionary behind the Open Synapse protocol. Gregor is engineering the transition from heavy brute-force LLMs to agile, sparse-matrix intelligent systems — with a core belief that technology must serve humanity first, and profit second.</p>
+                <div class="social-links">
+                    <a href="#"><i class="fa-brands fa-linkedin-in fa-lg"></i></a>
+                    <a href="#"><i class="fa-brands fa-github fa-lg"></i></a>
                 </div>
             </div>
         </div>
     </div>
 </section>
 
+<div class="section-divider"></div>
+
+<!-- CONTACT -->
 <section id="contact">
     <div class="container">
-        <div class="cta-box">
-            <h2 style="font-size:3rem; margin-bottom:20px;">Partner with Open Synapse Labs</h2>
-            <p style="color:var(--text-gray); margin-bottom:40px; font-size:1.2rem;">Join the Seed Round. Scaling infrastructure for the 200B Enterprise release.</p>
-            <a href="mailto:invest@opensynapse.ai" class="btn">Invest in Arche3</a>
+        <div class="contact-wrapper">
+            <div class="contact-info fade-in">
+                <div class="section-label">Connect</div>
+                <h2>Partner with<br><span>Open Synapse</span><br>Labs</h2>
+                <p>Join the Seed Round. We're scaling infrastructure for Arche3, EAP robotics, and quantum photonic silicon. Looking for partners who share one belief: <strong style="color:var(--ice)">technology should make the world genuinely better.</strong></p>
+                <div class="contact-meta">
+                    <div class="meta-item">
+                        <div class="meta-icon"><i class="fa-solid fa-envelope" style="font-size:.65rem;"></i></div>
+                        gregorgramtoshi@gmail.com
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-icon"><i class="fa-solid fa-location-dot" style="font-size:.65rem;"></i></div>
+                        Remote-First / Global
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-icon"><i class="fa-solid fa-circle-nodes" style="font-size:.65rem;"></i></div>
+                        Stage: Seed Round Open
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-icon" style="color:var(--green); border-color:rgba(0,229,160,0.3);"><i class="fa-solid fa-heart" style="font-size:.65rem;"></i></div>
+                        <span style="color:var(--green);">Mission: Make the world better</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="contact-form fade-in">
+                <form id="contactForm"
+                      action="https://formspree.io/f/mkovqbgq"
+                      method="POST"
+                      onsubmit="handleSubmit(event)">
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" name="name" placeholder="Your name" required autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" name="email" placeholder="you@company.com" required autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label>Message</label>
+                        <textarea name="message" placeholder="Tell us about your interest in Open Synapse Labs..." required></textarea>
+                    </div>
+                    <input type="hidden" name="_subject" value="New message — opensynapselabs.github.io">
+                    <button type="submit" class="btn-submit" id="submitBtn">▶ &nbsp;TRANSMIT MESSAGE</button>
+                    <div class="form-error" id="formError">Transmission failed. Email us directly at gregorgramtoshi@gmail.com</div>
+                    <p class="form-note">// To activate: register at formspree.io → replace YOUR_FORM_ID in the code</p>
+                </form>
+                <div class="form-success" id="formSuccess">
+                    <div style="font-size:2.5rem; margin-bottom:16px;">▲</div>
+                    TRANSMISSION RECEIVED<br>
+                    <span style="color:var(--text-muted); font-size:0.72rem; letter-spacing:1px; display:block; margin-top:10px;">We will respond within 48 hours.</span>
+                </div>
+            </div>
         </div>
     </div>
 </section>
 
+<!-- FOOTER -->
 <footer>
-    <div class="container">
-        <p class="mono">© 2026 OPEN SYNAPSE LABS | FOUNDER: GREGOR GRAMTOSHI</p>
+    <div class="container foot-inner">
+        <p>© 2026 OPEN SYNAPSE LABS</p>
+        <p style="color:rgba(0,194,255,0.15);">INTELLIGENCE FOR A BETTER WORLD</p>
+        <p>GREGOR GRAMTOSHI // ALL RIGHTS RESERVED</p>
     </div>
 </footer>
 
-<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
 <script>
-    AOS.init({ duration: 1000, once: true });
+// CURSOR
+const dot=document.getElementById('cursorDot'), ring=document.getElementById('cursorRing');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{ mx=e.clientX; my=e.clientY; dot.style.left=mx+'px'; dot.style.top=my+'px'; });
+(function animRing(){ rx+=(mx-rx)*.12; ry+=(my-ry)*.12; ring.style.left=rx+'px'; ring.style.top=ry+'px'; requestAnimationFrame(animRing); })();
 
-    // Terminal Typewriter Content from config
-    const content = [
-        "<span style='color:#555'># Initializing Open Synapse Labs Core...</span>",
-        "<span style='color:var(--secondary)'>class</span> Arche3Config:",
-        "    project = <span style='color:var(--primary)'>'arche3_7b_mini'</span>",
-        "    d_model = <span style='color:var(--primary)'>4096</span>",
-        "    n_layers = <span style='color:var(--primary)'>28</span>",
-        "    d_ff_dense = <span style='color:var(--primary)'>14336</span>",
-        "    experts = <span style='color:var(--primary)'>8192</span> <span style='color:#555'># MoE Hive</span>",
-        "    device = <span style='color:var(--accent)'>'cuda'</span> <span style='color:#555'># Scaling from MPS</span>",
-        "<br><span style='color:#27c93f'>> GPU Cluster detected: [OK]</span>",
-        "<span style='color:#27c93f'>> Neural Hive Active.</span>"
-    ];
-
-    let i = 0;
-    function type() {
-        if (i < content.length) {
-            const div = document.createElement('div');
-            div.innerHTML = content[i];
-            div.style.marginBottom = "5px";
-            document.getElementById('typewriter').appendChild(div);
-            i++;
-            setTimeout(type, 350);
-        }
+// CANVAS
+const canvas=document.getElementById('bg'), ctx=canvas.getContext('2d');
+let W,H,pts=[];
+function resize(){ W=canvas.width=window.innerWidth; H=canvas.height=window.innerHeight; }
+window.addEventListener('resize',()=>{ resize(); buildGrid(); }); resize();
+function buildGrid(){
+    pts=[];
+    const cols=Math.ceil(W/90)+1, rows=Math.ceil(H/90)+1;
+    for(let r=0;r<=rows;r++) for(let c=0;c<=cols;c++){
+        const jx=(Math.random()-.5)*18, jy=(Math.random()-.5)*18;
+        pts.push({x:c*90+jx,y:r*90+jy,ox:c*90+jx,oy:r*90+jy,vx:(Math.random()-.5)*.12,vy:(Math.random()-.5)*.12});
     }
-    setTimeout(type, 1000);
-
-    // Canvas Background
-    const canvas = document.getElementById("network");
-    const ctx = canvas.getContext("2d");
-    let particles = [];
-    
-    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-    window.addEventListener("resize", resize);
-    resize();
-
-    class P {
-        constructor() {
-            this.x = Math.random()*canvas.width;
-            this.y = Math.random()*canvas.height;
-            this.vx = (Math.random()-0.5)*0.4;
-            this.vy = (Math.random()-0.5)*0.4;
-        }
-        update() {
-            this.x+=this.vx; this.y+=this.vy;
-            if(this.x<0||this.x>canvas.width) this.vx*=-1;
-            if(this.y<0||this.y>canvas.height) this.vy*=-1;
-        }
+}
+buildGrid();
+(function draw(){
+    ctx.clearRect(0,0,W,H);
+    const c=Math.ceil(W/90)+1;
+    pts.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; if(Math.abs(p.x-p.ox)>12)p.vx*=-1; if(Math.abs(p.y-p.oy)>12)p.vy*=-1; });
+    for(let i=0;i<pts.length;i++){
+        if(i%c>=c-1) continue;
+        const a=i,b=i+1,d=i+c,e=i+c+1;
+        if(d>=pts.length||e>=pts.length) continue;
+        ctx.beginPath(); ctx.moveTo(pts[a].x,pts[a].y); ctx.lineTo(pts[b].x,pts[b].y); ctx.lineTo(pts[d].x,pts[d].y); ctx.closePath();
+        ctx.strokeStyle='rgba(0,102,204,0.12)'; ctx.lineWidth=0.5; ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(pts[b].x,pts[b].y); ctx.lineTo(pts[e].x,pts[e].y); ctx.lineTo(pts[d].x,pts[d].y); ctx.closePath();
+        ctx.strokeStyle='rgba(0,194,255,0.06)'; ctx.lineWidth=0.5; ctx.stroke();
     }
+    pts.forEach(p=>{ ctx.beginPath(); ctx.arc(p.x,p.y,1,0,Math.PI*2); ctx.fillStyle='rgba(0,194,255,0.2)'; ctx.fill(); });
+    requestAnimationFrame(draw);
+})();
 
-    function init() { for(let i=0; i<70; i++) particles.push(new P()); }
-    function animate() {
-        ctx.clearRect(0,0,canvas.width,canvas.height);
-        ctx.fillStyle = "#00f5ff";
-        particles.forEach(p => {
-            p.update();
-            ctx.beginPath(); ctx.arc(p.x, p.y, 1, 0, Math.PI*2); ctx.fill();
-        });
-        for(let a=0; a<particles.length; a++) {
-            for(let b=a; b<particles.length; b++) {
-                let dist = Math.hypot(particles[a].x-particles[b].x, particles[a].y-particles[b].y);
-                if(dist < 150) {
-                    ctx.strokeStyle = `rgba(0,245,255,${0.1 - dist/1500})`;
-                    ctx.beginPath(); ctx.moveTo(particles[a].x, particles[a].y);
-                    ctx.lineTo(particles[b].x, particles[b].y); ctx.stroke();
-                }
-            }
-        }
-        requestAnimationFrame(animate);
+// TYPEWRITER — real config data from arche3_config.py v3
+const code=[
+    "<span style='color:rgba(0,194,255,.3)'># ARCHE3-7B CONFIG v3  —  FP32</span>",
+    "<span style='color:#5E8EC7'>class</span> <span style='color:var(--cyan)'>Config</span>:",
+    "  project_name    = <span style='color:#7EC8A4'>'arche3_7b'</span>",
+    "  d_model         = <span style='color:#CE9178'>2048</span>",
+    "  n_layers_input  = <span style='color:#CE9178'>5</span>  <span style='color:rgba(0,194,255,.28)'># Dense Core Input</span>",
+    "  n_layers_fusion = <span style='color:#CE9178'>5</span>  <span style='color:rgba(0,194,255,.28)'># Dense Core Fusion</span>",
+    "  num_domains     = <span style='color:#CE9178'>8</span>",
+    "  experts_per_domain = <span style='color:#CE9178'>2560</span>",
+    "  total_experts   = <span style='color:#CE9178'>20480</span>  <span style='color:rgba(0,194,255,.28)'># MoE Hive</span>",
+    "  expert_rank     = <span style='color:#CE9178'>160</span>",
+    "  k_min, k_max    = <span style='color:#CE9178'>2</span>, <span style='color:#CE9178'>4</span>  <span style='color:rgba(0,194,255,.28)'># Dynamic Top-K</span>",
+    "  vocab_size      = <span style='color:#CE9178'>30000</span>",
+    "  use_quantization = <span style='color:#FF7B7B'>False</span>  <span style='color:rgba(0,194,255,.28)'># FP32</span>",
+    "",
+    "<span style='color:#2EA043'>▶ TOTAL:    ~7.03B params</span>",
+    "<span style='color:#2EA043'>▶ hive.bin: ~25 GB (FP32)</span>",
+    "<span style='color:#2EA043'>▶ RAM peak: ~3.7 GB (train)</span>",
+    "<span style='color:var(--cyan)'>▶ Neural Hive: [LOADING...]</span>"
+];
+let ci=0;
+(function typeNext(){ if(ci<code.length){ const d=document.createElement('div'); d.innerHTML=code[ci]; d.style.marginBottom='3px'; document.getElementById('typewriter').appendChild(d); ci++; setTimeout(typeNext,300); } })();
+
+// PRODUCT FILTER
+function filterCat(btn, cat){
+    document.querySelectorAll('.cat-tab').forEach(t=>t.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.prod-card').forEach(card=>{
+        card.classList.toggle('show', cat==='all' || card.dataset.cat===cat);
+    });
+}
+
+// SCROLL ANIMATIONS
+const obs=new IntersectionObserver(entries=>entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('visible'); }),{threshold:.12});
+document.querySelectorAll('.fade-in,.roadmap-block').forEach(el=>obs.observe(el));
+
+// FORMSPREE SUBMIT
+async function handleSubmit(e){
+    e.preventDefault();
+    const btn=document.getElementById('submitBtn');
+    const form=document.getElementById('contactForm');
+    const errEl=document.getElementById('formError');
+    errEl.style.display='none';
+    btn.textContent='▶  TRANSMITTING...';
+    btn.disabled=true;
+    try {
+        const res=await fetch(form.action,{method:'POST',body:new FormData(form),headers:{'Accept':'application/json'}});
+        if(res.ok){
+            form.style.display='none';
+            document.getElementById('formSuccess').style.display='block';
+        } else { throw new Error(); }
+    } catch {
+        errEl.style.display='block';
+        btn.textContent='▶   TRANSMIT MESSAGE';
+        btn.disabled=false;
     }
-    init(); animate();
+}
 </script>
-
 </body>
 </html>
